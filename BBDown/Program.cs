@@ -188,7 +188,7 @@ namespace BBDown
                 "logintv",
                 "通过APP扫描二维码以登录您的TV账号");
             rootCommand.AddCommand(loginTVCommand);
-            rootCommand.Description = "BBDown是一个免费且便捷高效的哔哩哔哩下载/解析软件.";
+            rootCommand.Description = "BBDownBlue是一个免费且便捷高效的哔哩哔哩下载/解析软件.";
             rootCommand.TreatUnmatchedTokensAsErrors = true;
 
             //WEB登录
