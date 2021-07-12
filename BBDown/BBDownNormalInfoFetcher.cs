@@ -18,7 +18,7 @@ namespace BBDown
             string title = infoJson.RootElement.GetProperty("data").GetProperty("title").GetString();
             string desc = infoJson.RootElement.GetProperty("data").GetProperty("desc").GetString();
             string pic = infoJson.RootElement.GetProperty("data").GetProperty("pic").GetString();
-            string pubTime = infoJson.RootElement.GetProperty("data").GetProperty("pubdate").GetString();
+            string pubTime = infoJson.RootElement.GetProperty("data").GetProperty("pubdate").ToString();
             pubTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(Convert.ToDouble(pubTime)).ToLocalTime().ToString();
             bool bangumi = false;
 
@@ -28,11 +28,11 @@ namespace BBDown
             {
                 Page p = new Page(page.GetProperty("page").GetInt32(),
                     id,
-                    page.GetProperty("cid").GetString(),
+                    page.GetProperty("cid").ToString(),
                     "", //epid
                     page.GetProperty("part").GetString().Trim(),
                     page.GetProperty("duration").GetInt32(),
-                    page.GetProperty("dimension").GetProperty("width").GetString() + "x" + page.GetProperty("dimension").GetProperty("height").GetString());
+                    page.GetProperty("dimension").GetProperty("width").ToString() + "x" + page.GetProperty("dimension").GetProperty("height").ToString());
                 pagesInfo.Add(p);
             }
 

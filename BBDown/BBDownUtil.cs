@@ -281,7 +281,7 @@ namespace BBDown
         {
             string api = $"https://api.bilibili.com/x/web-interface/archive/stat?bvid={bv}";
             string json = GetWebSource(api);
-            string aid = JsonDocument.Parse(json).RootElement.GetProperty("data").GetProperty("aid").GetString();
+            string aid = JsonDocument.Parse(json).RootElement.GetProperty("data").GetProperty("aid").ToString();
             return aid;
         }
 

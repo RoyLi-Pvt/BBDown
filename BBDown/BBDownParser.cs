@@ -92,11 +92,11 @@ namespace BBDown
                         {
                             Video v = new Video();
                             v.dur = pDur;
-                            v.id = stream.GetProperty("stream_info").GetProperty("quality").GetString();
+                            v.id = stream.GetProperty("stream_info").GetProperty("quality").ToString();
                             v.dfn = Program.qualitys[v.id];
                             v.bandwith = stream.GetProperty("dash_video").GetProperty("bandwidth").GetInt64() / 1000;
                             v.baseUrl = stream.GetProperty("dash_video").GetProperty("base_url").GetString();
-                            v.codecs = stream.GetProperty("dash_video").GetProperty("codecid").GetString() == "12" ? "HEVC" : "AVC";
+                            v.codecs = stream.GetProperty("dash_video").GetProperty("codecid").ToString() == "12" ? "HEVC" : "AVC";
                             if (onlyHevc && v.codecs == "AVC") continue;
                             if (!videoTracks.Contains(v)) videoTracks.Add(v);
                         }
@@ -106,8 +106,8 @@ namespace BBDown
                 foreach(var node in audio.EnumerateArray())
                 {
                     Audio a = new Audio();
-                    a.id = node.GetProperty("id").GetString();
-                    a.dfn = node.GetProperty("id").GetString();
+                    a.id = node.GetProperty("id").ToString();
+                    a.dfn = node.GetProperty("id").ToString();
                     a.dur = pDur;
                     a.bandwith = node.GetProperty("bandwidth").GetInt64() / 1000;
                     a.baseUrl = node.GetProperty("base_url").GetString();
@@ -147,15 +147,15 @@ namespace BBDown
                     {
                         Video v = new Video();
                         v.dur = pDur;
-                        v.id = node.GetProperty("id").GetString();
-                        v.dfn = Program.qualitys[node.GetProperty("id").GetString()];
-                        v.bandwith = Convert.ToInt64(node.GetProperty("bandwidth").GetString()) / 1000;
+                        v.id = node.GetProperty("id").ToString();
+                        v.dfn = Program.qualitys[node.GetProperty("id").ToString()];
+                        v.bandwith = Convert.ToInt64(node.GetProperty("bandwidth").ToString()) / 1000;
                         v.baseUrl = node.GetProperty("base_url").GetString();
-                        v.codecs = node.GetProperty("codecid").GetString() == "12" ? "HEVC" : "AVC";
+                        v.codecs = node.GetProperty("codecid").ToString() == "12" ? "HEVC" : "AVC";
                         if (!tvApi && !appApi)
                         {
-                            v.res = node.GetProperty("width").GetString() + "x" + node.GetProperty("height").GetString();
-                            v.fps = node.GetProperty("frame_rate").GetString();
+                            v.res = node.GetProperty("width").ToString() + "x" + node.GetProperty("height").ToString();
+                            v.fps = node.GetProperty("frame_rate").ToString();
                         }
                         if (onlyHevc && v.codecs == "AVC") continue;
                         if (onlyAvc && v.codecs == "HEVC") continue;
@@ -175,10 +175,10 @@ namespace BBDown
                     foreach (var node in audio.EnumerateArray())
                     {
                         Audio a = new Audio();
-                        a.id = node.GetProperty("id").GetString();
-                        a.dfn = node.GetProperty("id").GetString();
+                        a.id = node.GetProperty("id").ToString();
+                        a.dfn = node.GetProperty("id").ToString();
                         a.dur = pDur;
-                        a.bandwith = Convert.ToInt64(node.GetProperty("bandwidth").GetString()) / 1000;
+                        a.bandwith = Convert.ToInt64(node.GetProperty("bandwidth").ToString()) / 1000;
                         a.baseUrl = node.GetProperty("base_url").GetString();
                         a.codecs = node.GetProperty("codecs").GetString().Replace("mp4a.40.2", "M4A");
                         audioTracks.Add(a);
@@ -197,8 +197,8 @@ namespace BBDown
                 double length = 0;
                 if (webJsonStr.Contains("\"data\":{"))
                 {
-                    quality = respJson.RootElement.GetProperty("data").GetProperty("quality").GetString();
-                    videoCodecid = respJson.RootElement.GetProperty("data").GetProperty("video_codecid").GetString();
+                    quality = respJson.RootElement.GetProperty("data").GetProperty("quality").ToString();
+                    videoCodecid = respJson.RootElement.GetProperty("data").GetProperty("video_codecid").ToString();
                     //获取所有分段
                     foreach (var node in respJson.RootElement.GetProperty("data").GetProperty("durl").EnumerateArray())
                     {
@@ -227,8 +227,8 @@ namespace BBDown
                 else
                 {
                     //如果获取数据失败，尝试从根路径获取数据
-                    quality = respJson.RootElement.GetProperty("quality").GetString();
-                    videoCodecid = respJson.RootElement.GetProperty("video_codecid").GetString();
+                    quality = respJson.RootElement.GetProperty("quality").ToString();
+                    videoCodecid = respJson.RootElement.GetProperty("video_codecid").ToString();
                     //获取所有分段
                     foreach (var node in respJson.RootElement.GetProperty("durl").EnumerateArray())
                     {
@@ -242,7 +242,7 @@ namespace BBDown
                         //获取可用清晰度
                         foreach (var node in respJson.RootElement.GetProperty("qn_extras").EnumerateArray())
                         {
-                            dfns.Add(node.GetProperty("qn").GetString());
+                            dfns.Add(node.GetProperty("qn").ToString());
                         }
                     }                   
                     else if (respJson.RootElement.GetProperty("accept_quality").ValueKind != JsonValueKind.Null) //非tv模式可用清晰度
