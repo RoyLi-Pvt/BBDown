@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,36 +14,36 @@ namespace BBDown
         {
             string api = $"https://api.bilibili.com/x/web-interface/view?aid={id}";
             string json = GetWebSource(api);
-            JObject infoJson = JObject.Parse(json);
-            string title = infoJson["data"]["title"].ToString();
-            string desc = infoJson["data"]["desc"].ToString();
-            string pic = infoJson["data"]["pic"].ToString();
-            string pubTime = infoJson["data"]["pubdate"].ToString();
+            JsonDocument infoJson = JsonDocument.Parse(json);
+            string title = infoJson.RootElement.GetProperty("data").GetProperty("title").GetString();
+            string desc = infoJson.RootElement.GetProperty("data").GetProperty("desc").GetString();
+            string pic = infoJson.RootElement.GetProperty("data").GetProperty("pic").GetString();
+            string pubTime = infoJson.RootElement.GetProperty("data").GetProperty("pubdate").GetString();
             pubTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(Convert.ToDouble(pubTime)).ToLocalTime().ToString();
             bool bangumi = false;
 
-            JArray pages = JArray.Parse(infoJson["data"]["pages"].ToString());
+            var pages = infoJson.RootElement.GetProperty("data").GetProperty("pages");
             List<Page> pagesInfo = new List<Page>();
-            foreach (JObject page in pages)
+            foreach (var page in pages.EnumerateArray())
             {
-                Page p = new Page(page["page"].Value<int>(),
+                Page p = new Page(page.GetProperty("page").GetInt32(),
                     id,
-                    page["cid"].ToString(),
+                    page.GetProperty("cid").GetString(),
                     "", //epid
-                    page["part"].ToString().Trim(),
-                    page["duration"].Value<int>(),
-                    page["dimension"]["width"] + "x" + page["dimension"]["height"]);
+                    page.GetProperty("part").GetString().Trim(),
+                    page.GetProperty("duration").GetInt32(),
+                    page.GetProperty("dimension").GetProperty("width").GetString() + "x" + page.GetProperty("dimension").GetProperty("height").GetString());
                 pagesInfo.Add(p);
             }
 
             try
             {
-                if (infoJson["data"]["redirect_url"].ToString().Contains("bangumi"))
+                if (infoJson.RootElement.GetProperty("data").GetProperty("redirect_url").GetString().Contains("bangumi"))
                 {
                     bangumi = true;
-                    string epId = Regex.Match(infoJson["data"]["redirect_url"].ToString(), "ep(\\d+)").Groups[1].Value;
+                    string epId = Regex.Match(infoJson.RootElement.GetProperty("data").GetProperty("redirect_url").GetString(), "ep(\\d+)").Groups[1].Value;
                     //番剧内容通常不会有分P，如果有分P则不需要epId参数
-                    if (pages.Count == 1)
+                    if (pages.GetArrayLength() == 1)
                     {
                         pagesInfo.ForEach(p => p.epid = epId);
                     }

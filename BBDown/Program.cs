@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
 using QRCoder;
 using System;
 using System.Collections.Generic;
@@ -198,7 +198,7 @@ namespace BBDown
                 {
                     Log("获取登录地址...");
                     string loginUrl = "https://passport.bilibili.com/qrcode/getLoginUrl";
-                    string url = JObject.Parse(GetWebSource(loginUrl))["data"]["url"].ToString();
+                    string url = JsonDocument.Parse(GetWebSource(loginUrl)).RootElement.GetProperty("data").GetProperty("url").GetString();
                     string oauthKey = GetQueryString("oauthKey", url);
                     //Log(oauthKey);
                     //Log(url);
@@ -214,27 +214,31 @@ namespace BBDown
                     {
                         Thread.Sleep(1000);
                         string w = GetLoginStatus(oauthKey);
-                        string data = JObject.Parse(w)["data"].ToString();
-                        if (data == "-2")
+                        var Json = JsonDocument.Parse(w);
+                        if(Json.RootElement.GetProperty("data").ValueKind == JsonValueKind.Number)
                         {
-                            LogColor("二维码已过期, 请重新执行登录指令.");
-                            break;
-                        }
-                        else if (data == "-4") //等待扫码
-                        {
-                            continue;
-                        }
-                        else if (data == "-5") //等待确认
-                        {
-                            if (!flag)
+                            int data = Json.RootElement.GetProperty("data").GetInt32();
+                            if (data == -2)
                             {
-                                Log("扫码成功, 请确认...");
-                                flag = !flag;
+                                LogColor("二维码已过期, 请重新执行登录指令.");
+                                break;
+                            }
+                            else if (data == -4) //等待扫码
+                            {
+                                continue;
+                            }
+                            else if (data == -5) //等待确认
+                            {
+                                if (!flag)
+                                {
+                                    Log("扫码成功, 请确认...");
+                                    flag = !flag;
+                                }
                             }
                         }
                         else
                         {
-                            string cc = JObject.Parse(w)["data"]["url"].ToString();
+                            string cc = Json.RootElement.GetProperty("data").GetProperty("url").GetString();
                             Log("登录成功: SESSDATA=" + GetQueryString("SESSDATA", cc));
                             //导出cookie
                             File.WriteAllText(Path.Combine(APP_DIR, "BBDown.data"), cc.Substring(cc.IndexOf('?') + 1).Replace("&", ";"));
@@ -258,8 +262,9 @@ namespace BBDown
                     WebClient webClient = new WebClient();
                     byte[] responseArray = webClient.UploadValues(loginUrl, parms);
                     string web = Encoding.UTF8.GetString(responseArray);
-                    string url = JObject.Parse(web)["data"]["url"].ToString();
-                    string authCode = JObject.Parse(web)["data"]["auth_code"].ToString();
+                    var WebJson = JsonDocument.Parse(web);
+                    string url = WebJson.RootElement.GetProperty("data").GetProperty("url").GetString();
+                    string authCode = WebJson.RootElement.GetProperty("data").GetProperty("auth_code").GetString();
                     Log("生成二维码...");
                     QRCodeGenerator qrGenerator = new QRCodeGenerator();
                     QRCodeData qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
@@ -276,19 +281,20 @@ namespace BBDown
                         Thread.Sleep(1000);
                         responseArray = webClient.UploadValues(pollUrl, parms);
                         web = Encoding.UTF8.GetString(responseArray);
-                        string code = JObject.Parse(web)["code"].ToString();
-                        if (code == "86038")
+                        WebJson = JsonDocument.Parse(web);
+                        int code = WebJson.RootElement.GetProperty("code").GetInt32();
+                        if (code == 86038)
                         {
                             LogColor("二维码已过期, 请重新执行登录指令.");
                             break;
                         }
-                        else if (code == "86039") //等待扫码
+                        else if (code == 86039) //等待扫码
                         {
                             continue;
                         }
                         else
                         {
-                            string cc = JObject.Parse(web)["data"]["access_token"].ToString();
+                            string cc = WebJson.RootElement.GetProperty("data").GetProperty("access_token").GetString();
                             Log("登录成功: AccessToken=" + cc);
                             //导出cookie
                             File.WriteAllText(Path.Combine(APP_DIR, "BBDownTV.data"), "access_token=" + cc);
@@ -556,8 +562,8 @@ namespace BBDown
                     //调用解析
                     (webJsonStr, videoTracks, audioTracks, clips, dfns) = ExtractTracks(onlyHevc, onlyAvc, aidOri, p.aid, p.cid, p.epid, tvApi, intlApi, appApi);
 
-                    //File.WriteAllText($"debug.json", JObject.Parse(webJson).ToString());
-                    JObject respJson = JObject.Parse(webJsonStr);
+                    //File.WriteAllText($"debug.json", JsonDocument.Parse(webJson).ToString());
+                    JsonDocument respJson = JsonDocument.Parse(webJsonStr);
 
 
                     //此处代码简直灾难，后续优化吧

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,48 +15,48 @@ namespace BBDown
             string index = "";
             string api = $"https://api.bilibili.com/pgc/view/web/season?ep_id={id}";
             string json = GetWebSource(api);
-            JObject infoJson = JObject.Parse(json);
-            string cover = infoJson["result"]["cover"].ToString();
-            string title = infoJson["result"]["title"].ToString();
-            string desc = infoJson["result"]["evaluate"].ToString();
-            string pubTime = infoJson["result"]["publish"]["pub_time"].ToString();
-            JArray pages = JArray.Parse(infoJson["result"]["episodes"].ToString());
+            JsonDocument infoJson = JsonDocument.Parse(json);
+            string cover = infoJson.RootElement.GetProperty("result").GetProperty("cover").GetString();
+            string title = infoJson.RootElement.GetProperty("result").GetProperty("title").GetString();
+            string desc = infoJson.RootElement.GetProperty("result").GetProperty("evaluate").GetString();
+            string pubTime = infoJson.RootElement.GetProperty("result").GetProperty("publish").GetProperty("pub_time").GetString();
+            JsonElement pages = infoJson.RootElement.GetProperty("result").GetProperty("episodes");//JArray.Parse(infoJson.RootElement.GetProperty("result"]["episodes"].ToString());
             List<Page> pagesInfo = new List<Page>();
             int i = 1;
 
             //episodes为空; 或者未包含对应epid，番外/花絮什么的
-            if (pages.Count == 0 || !pages.ToString().Contains($"/ep{id}")) 
+            if (pages.GetArrayLength() == 0 || !pages.ToString().Contains($"/ep{id}")) 
             {
-                if (infoJson["result"]["section"] != null)
+                if (infoJson.RootElement.GetProperty("result").TryGetProperty("section",out var Section))
                 {
-                    foreach (JObject section in JArray.Parse(infoJson["result"]["section"].ToString()))
+                    foreach (var Sec in Section.EnumerateArray())
                     {
-                        if (section.ToString().Contains($"/ep{id}"))
+                        if (Sec.ToString().Contains($"/ep{id}"))
                         {
-                            title += "[" + section["title"].ToString() + "]";
-                            pages = JArray.Parse(section["episodes"].ToString());
+                            title += "[" + Sec.GetProperty("title").GetString() + "]";
+                            pages = Section.GetProperty("episodes");
                             break;
                         }
                     }
                 }
             }
 
-            foreach (JObject page in pages)
+            foreach (var page in pages.EnumerateArray())
             {
                 //跳过预告
-                if (page.ContainsKey("badge") && page["badge"].ToString() == "预告") continue;
+                if (page.TryGetProperty("badge",out var Badge) && Badge.GetString() == "预告") continue;
                 string res = "";
                 try
                 {
-                    res = page["dimension"]["width"].ToString() + "x" + page["dimension"]["height"].ToString();
+                    res = page.GetProperty("dimension").GetProperty("width").GetString() + "x" + page.GetProperty("dimension").GetProperty("height").GetString();
                 }
                 catch (Exception) { }
-                string _title = page["title"].ToString() + " " + page["long_title"].ToString().Trim();
+                string _title = page.GetProperty("title").GetString() + " " + page.GetProperty("long_title").GetString().Trim();
                 _title = _title.Trim();
                 Page p = new Page(i++,
-                    page["aid"].ToString(),
-                    page["cid"].ToString(),
-                    page["id"].ToString(),
+                    page.GetProperty("aid").GetString(),
+                    page.GetProperty("cid").GetString(),
+                    page.GetProperty("id").GetString(),
                     _title,
                     0, res);
                 if (p.epid == id) index = p.index.ToString();

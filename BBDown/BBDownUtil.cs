@@ -1,5 +1,5 @@
 ﻿using ICSharpCode.SharpZipLib.GZip;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -97,7 +97,7 @@ namespace BBDown
                     string web = GetWebSource(input);
                     Regex regex = new Regex("window.__INITIAL_STATE__=([\\s\\S].*?);\\(function\\(\\)");
                     string json = regex.Match(web).Groups[1].Value;
-                    string epId = JObject.Parse(json)["epList"][0]["id"].ToString();
+                    string epId = JsonDocument.Parse(json).RootElement.GetProperty("epList")[0].GetProperty("id").GetString();
                     return $"ep:{epId}";
                 }
             }
@@ -123,7 +123,7 @@ namespace BBDown
                 string web = GetWebSource("https://www.bilibili.com/bangumi/play/" + input);
                 Regex regex = new Regex("window.__INITIAL_STATE__=([\\s\\S].*?);\\(function\\(\\)");
                 string json = regex.Match(web).Groups[1].Value;
-                string epId = JObject.Parse(json)["epList"][0]["id"].ToString();
+                string epId = JsonDocument.Parse(json).RootElement.GetProperty("epList")[0].GetProperty("id").GetString();
                 return $"ep:{epId}";
             }
             else
@@ -281,7 +281,7 @@ namespace BBDown
         {
             string api = $"https://api.bilibili.com/x/web-interface/archive/stat?bvid={bv}";
             string json = GetWebSource(api);
-            string aid = JObject.Parse(json)["data"]["aid"].ToString();
+            string aid = JsonDocument.Parse(json).RootElement.GetProperty("data").GetProperty("aid").GetString();
             return aid;
         }
 
@@ -289,7 +289,7 @@ namespace BBDown
         {
             string api = $"https://api.bilibili.com/pugv/view/web/season?season_id={ssid}";
             string json = GetWebSource(api);
-            string epId = JObject.Parse(json)["data"]["episodes"][0]["id"].ToString();
+            string epId = JsonDocument.Parse(json).RootElement.GetProperty("data").GetProperty("episodes")[0].GetProperty("id").GetString();
             return epId;
         }
 

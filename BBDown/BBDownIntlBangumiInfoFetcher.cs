@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,11 +17,11 @@ namespace BBDown
             //string api = $"https://api.global.bilibili.com/intl/gateway/ogv/m/view?ep_id={id}&s_locale=ja_JP";
             string api = $"https://api.global.bilibili.com/intl/gateway/v2/ogv/view/app/season?ep_id={id}&platform=android&s_locale=zh_SG&mobi_app=bstar_a" + (Program.TOKEN != "" ? $"&access_key={Program.TOKEN}" : "");
             string json = GetWebSource(api);
-            JObject infoJson = JObject.Parse(json);
-            string seasonId = infoJson["result"]["season_id"].ToString();
-            string cover = infoJson["result"]["cover"].ToString();
-            string title = infoJson["result"]["title"].ToString();
-            string desc = infoJson["result"]["evaluate"].ToString();
+            var infoJson = JsonDocument.Parse(json);
+            string seasonId = infoJson.RootElement.GetProperty("result").GetProperty("season_id").GetString();
+            string cover = infoJson.RootElement.GetProperty("result").GetProperty("cover").GetString();
+            string title = infoJson.RootElement.GetProperty("result").GetProperty("title").GetString();
+            string desc = infoJson.RootElement.GetProperty("result").GetProperty("evaluate").GetString();
 
 
             if (cover == "")
@@ -32,24 +32,25 @@ namespace BBDown
                 {
                     Regex regex = new Regex("window.__INITIAL_STATE__=([\\s\\S].*?);\\(function\\(\\)");
                     string _json = regex.Match(web).Groups[1].Value;
-                    cover = JObject.Parse(_json)["mediaInfo"]["cover"].ToString();
-                    title = JObject.Parse(_json)["mediaInfo"]["title"].ToString();
-                    desc = JObject.Parse(_json)["mediaInfo"]["evaluate"].ToString();
+                    var Json = JsonDocument.Parse(_json);
+                    cover = Json.RootElement.GetProperty("mediaInfo").GetProperty("cover").GetString();
+                    title = Json.RootElement.GetProperty("mediaInfo").GetProperty("title").GetString();
+                    desc = Json.RootElement.GetProperty("mediaInfo").GetProperty("evaluate").GetString();
                 }
             }
 
-            string pubTime = infoJson["result"]["publish"]["pub_time"].ToString();
-            JArray pages = infoJson["result"]["episodes"].ToString() != "" ? JArray.Parse(infoJson["result"]["episodes"].ToString()) : new JArray();
+            string pubTime = infoJson.RootElement.GetProperty("result").GetProperty("publish").GetProperty("pub_time").GetString();
+            infoJson.RootElement.GetProperty("result").TryGetProperty("episodes",out var pages);
             List<Page> pagesInfo = new List<Page>();
             int i = 1;
 
-            if (infoJson["result"]["modules"] != null)
+            if (infoJson.RootElement.GetProperty("result").GetProperty("modules").ValueKind != JsonValueKind.Null)
             {
-                foreach (JObject section in JArray.Parse(infoJson["result"]["modules"].ToString()))
+                foreach (var section in infoJson.RootElement.GetProperty("result").GetProperty("modules").EnumerateArray())
                 {
                     if (section.ToString().Contains($"/{id}"))
                     {
-                        pages = JArray.Parse(section["data"]["episodes"].ToString());
+                        pages = section.GetProperty("data").GetProperty("episodes");
                         break;
                     }
                 }
@@ -61,11 +62,11 @@ namespace BBDown
                 {
                     string epApi = $"https://api.bilibili.com/pgc/web/season/section?season_id={seasonId}";
                     var _web = GetWebSource(epApi);
-                    pages = JArray.Parse(JObject.Parse(_web)["result"]["main_section"]["episodes"].ToString());
+                    pages = JArray.Parse(JsonDocument.Parse(_web)["result"]["main_section"]["episodes"].ToString());
                 }
-                else if (infoJson["data"]["modules"] != null)
+                else if (infoJson.RootElement.GetProperty("data"]["modules"] != null)
                 {
-                    foreach (JObject section in JArray.Parse(infoJson["data"]["modules"].ToString()))
+                    foreach (JsonDocument section in JArray.Parse(infoJson.RootElement.GetProperty("data"]["modules"].ToString()))
                     {
                         if (section.ToString().Contains($"ep_id={id}"))
                         {
@@ -76,22 +77,22 @@ namespace BBDown
                 }
             }*/
 
-            foreach (JObject page in pages)
+            foreach (var page in pages.EnumerateArray())
             {
                 //跳过预告
-                if (page.ContainsKey("badge") && page["badge"].ToString() == "预告") continue;
+                if (page.TryGetProperty("badge",out var badge) && badge.ToString() == "预告") continue;
                 string res = "";
                 try
                 {
-                    res = page["dimension"]["width"].ToString() + "x" + page["dimension"]["height"].ToString();
+                    res = page.GetProperty("dimension").GetProperty("width").GetString() + "x" + page.GetProperty("dimension").GetProperty("height").GetString();
                 }
                 catch (Exception) { }
-                string _title = page["title"].ToString() + " " + page["long_title"].ToString().Trim();
+                string _title = page.GetProperty("title").GetString() + " " + page.GetProperty("long_title").GetString().Trim();
                 _title = _title.Trim();
                 Page p = new Page(i++,
-                    page["aid"].ToString(),
-                    page["cid"].ToString(),
-                    page["id"].ToString(),
+                    page.GetProperty("aid").GetString(),
+                    page.GetProperty("cid").GetString(),
+                    page.GetProperty("id").GetString(),
                     _title,
                     0, res);
                 if (p.epid == id) index = p.index.ToString();

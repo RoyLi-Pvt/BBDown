@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,13 +21,13 @@ namespace BBDown
                 {
                     string api = $"https://app.global.bilibili.com/intl/gateway/v2/app/subtitle?&ep_id={epId}";
                     string json = GetWebSource(api);
-                    JObject infoJson = JObject.Parse(json);
-                    JArray subs = JArray.Parse(infoJson["data"]["subtitles"].ToString());
-                    foreach (JObject sub in subs)
+                    JsonDocument infoJson = JsonDocument.Parse(json);
+                    var subs = infoJson.RootElement.GetProperty("data").GetProperty("subtitles");
+                    foreach (var sub in subs.EnumerateArray())
                     {
                         Subtitle subtitle = new Subtitle();
-                        subtitle.url = sub["url"].ToString();
-                        subtitle.lan = sub["key"].ToString();
+                        subtitle.url = sub.GetProperty("url").GetString();
+                        subtitle.lan = sub.GetProperty("key").GetString();
                         subtitle.path = $"{aid}/{aid}.{cid}.{subtitle.lan}.srt";
                         subtitles.Add(subtitle);
                     }
@@ -40,13 +40,13 @@ namespace BBDown
             {
                 string api = $"https://api.bilibili.com/x/web-interface/view?aid={aid}&cid={cid}";
                 string json = GetWebSource(api);
-                JObject infoJson = JObject.Parse(json);
-                JArray subs = JArray.Parse(infoJson["data"]["subtitle"]["list"].ToString());
-                foreach (JObject sub in subs)
+                JsonDocument infoJson = JsonDocument.Parse(json);
+                var subs = infoJson.RootElement.GetProperty("data").GetProperty("subtitle").GetProperty("list");
+                foreach (var sub in subs.EnumerateArray())
                 {
                     Subtitle subtitle = new Subtitle();
-                    subtitle.url = sub["subtitle_url"].ToString();
-                    subtitle.lan = sub["lan"].ToString();
+                    subtitle.url = sub.GetProperty("subtitle_url").GetString();
+                    subtitle.lan = sub.GetProperty("lan").GetString();
                     subtitle.path = $"{aid}/{aid}.{cid}.{subtitle.lan}.srt";
                     subtitles.Add(subtitle);
                 }
@@ -109,16 +109,16 @@ namespace BBDown
         private static string ConvertSubFromJson(string jsonString)
         {
             StringBuilder lines = new StringBuilder();
-            JObject json = JObject.Parse(jsonString);
-            JArray sub = JArray.Parse(json["body"].ToString());
-            for(int i = 0; i < sub.Count; i++)
+            JsonDocument json = JsonDocument.Parse(jsonString);
+            var sub = json.RootElement.GetProperty("body");
+            for(int i = 0; i < sub.GetArrayLength(); i++)
             {
-                JObject line = (JObject)sub[i];
+                var line = sub[i];
                 lines.AppendLine((i + 1).ToString());
-                lines.AppendLine($"{(line.ContainsKey("from") ? FormatTime(line["from"].ToString()) : "0")} --> {FormatTime(line["to"].ToString())}");
+                lines.AppendLine($"{(line.TryGetProperty("from",out var from) ? FormatTime(from.GetString()) : "0")} --> {FormatTime(line.GetProperty("to").GetString())}");
                 //有的没有内容
-                if (line.ContainsKey("content"))
-                    lines.AppendLine(line["content"].ToString());
+                if (line.TryGetProperty("content",out var content))
+                    lines.AppendLine(content.ToString());
                 lines.AppendLine();
             }
             return lines.ToString();
